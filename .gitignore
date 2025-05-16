@@ -1,0 +1,19 @@
+# Ignora o executável gerado
+jogo
+
+# Ignora arquivos de backup e temporários do editor
+*.swp
+*~
+
+# Ignora arquivos do VS Code
+.vscode/
+
+# Ignora arquivos de build, logs, cache
+build/
+*.o
+*.out
+*.log
+
+# Ignora arquivos do sistema
+.DS_Store
+Thumbs.db
