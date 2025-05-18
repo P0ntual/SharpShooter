@@ -1,16 +1,14 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 
-#include "raylib.h"
+#include <raylib.h>
 
-typedef struct Player {
-    Vector2 position;
+typedef struct player {
+    Vector2 pos;
+    int vida;
+    int gold;
     float speed;
-    Color color;
+    float invencivelTempo;  
 } Player;
-
-Player CreatePlayer(float x, float y);
-void UpdatePlayer(Player *player);
-void DrawPlayer(Player player);
 
 #endif
