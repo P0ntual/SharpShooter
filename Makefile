@@ -1,15 +1,21 @@
 CC = gcc
-CFLAGS = -Wall -std=c99
-LDFLAGS = -lraylib -lGL -lm -lpthread -ldl -lrt -lX11
+CFLAGS = -Wall -Wextra -g `pkg-config --cflags raylib`
+LDFLAGS = `pkg-config --libs raylib` -lm
 
-SRC = main.c player.c
-OUT = jogo
+SRC = main.c inimigo.c projetil.c
+OBJ = $(SRC:.c=.o)
+TARGET = cowboy_game
 
-all:
-	$(CC) $(CFLAGS) $(SRC) -o $(OUT) $(LDFLAGS)
+all: $(TARGET)
+
+$(TARGET): $(OBJ)
+	$(CC) $(OBJ) -o $@ $(LDFLAGS)
+
+%.o: %.c %.h
+	$(CC) $(CFLAGS) -c $< -o $@
+
+main.o: main.c inimigo.h player.h projetil.h
+	$(CC) $(CFLAGS) -c main.c -o main.o
 
 clean:
-	rm -f $(OUT)
-
-
-	sfasfsafsarf
+	rm -f $(OBJ) $(TARGET)
