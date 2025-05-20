@@ -96,7 +96,7 @@ void inimigosAtacam(Inimigo **lista, Player *player, float delta) {
             } else if (temp->tipo == 1 && temp->fireCooldown <= 0.0f) {
                 Vector2 direcao = (Vector2){dx / dist, dy / dist};
                 float velocidadeProjetil = 300.0f;  
-                int danoProjetil = 10;
+                int danoProjetil = 9;
 
                 adicionarProjetil(&listaProjetil, temp->pos, direcao, velocidadeProjetil, danoProjetil);
                 temp->fireCooldown = 1.5f; 
