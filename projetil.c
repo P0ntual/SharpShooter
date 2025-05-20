@@ -73,7 +73,7 @@ void removerProjetil(Projetil **lista, Projetil *alvo) {
         free(alvo);
     }
 }
-safsafsafsafsafwa
+
 void liberarListaProjetil(Projetil **lista) {
     Projetil *temp = *lista;
     while (temp != NULL) {
