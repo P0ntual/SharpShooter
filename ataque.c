@@ -1,0 +1,125 @@
+#include <stdlib.h>
+#include <math.h>
+#include "raylib.h"
+#include "ataque.h"
+#include "inimigo.h"
+#include "projetil.h" 
+
+#define KNOCKBACK_FORCE     50.0f
+#define RAIO_ATAQUE_CORPO   30.0f
+#define RAIO_COLISAO_PROJ   15.0f
+
+static void aplicarKnockback(Vector2 *pos, float dx, float dy, float força) {
+    float length = sqrtf(dx * dx + dy * dy);
+    if (length == 0) return;
+    float nx = dx / length;
+    float ny = dy / length;
+    pos->x -= nx * força;
+    pos->y -= ny * força;
+}
+
+void playerAtaca(Inimigo **listaInimigos, Player *player) {
+    Inimigo *temp = *listaInimigos;
+    while (temp != NULL) {
+        float dx = temp->pos.x - player->pos.x;
+        float dy = temp->pos.y - player->pos.y;
+        float dist = sqrtf(dx * dx + dy * dy);
+
+        if (dist < RAIO_ATAQUE_CORPO) {
+            temp->vida -= player->dano;
+            
+            float magnitude = KNOCKBACK_FORCE * 0.5f;
+            if (dist != 0) {
+                float nx = dx / dist;
+                float ny = dy / dist;
+                temp->pos.x += nx * magnitude;
+                temp->pos.y += ny * magnitude;
+            }
+        }
+        temp = temp->prox;
+    }
+}
+
+void projeteisAtacamPlayer(Projetil **listaProjetil, Player *player) {
+    Projetil *temp = *listaProjetil;
+    Projetil *anterior = NULL;
+
+    while (temp != NULL) {
+        float dx = temp->pos.x - player->pos.x;
+        float dy = temp->pos.y - player->pos.y;
+        float dist = sqrtf(dx * dx + dy * dy);
+
+        if (dist < RAIO_COLISAO_PROJ && player->invencivelTempo <= 0.0f) {
+            player->vida -= temp->dano;
+            player->invencivelTempo = 1.0f;
+            aplicarKnockback(&player->pos, dx, dy, KNOCKBACK_FORCE);
+
+            Projetil *rem = temp;
+            if (anterior == NULL) {
+                *listaProjetil = temp->prox;
+                temp = *listaProjetil;
+            } else {
+                anterior->prox = temp->prox;
+                temp = anterior->prox;
+            }
+            free(rem);
+            continue;
+        }
+
+        anterior = temp;
+        temp = temp->prox;
+    }
+}
+
+void projeteisDoPlayerAtacamInimigos(Projetil **listaProjetilPlayer, Inimigo **listaInimigos) {
+    Projetil *proj = *listaProjetilPlayer;
+    Projetil *anteriorProj = NULL;
+
+    while (proj != NULL) {
+        if (proj->tipo != PROJETIL_PLAYER) {
+            anteriorProj = proj;
+            proj = proj->prox;
+            continue;
+        }
+
+        Inimigo *inimigo = *listaInimigos;
+        int atingiu = 0;
+
+        while (inimigo != NULL) {
+            float dx = proj->pos.x - inimigo->pos.x;
+            float dy = proj->pos.y - inimigo->pos.y;
+            float dist = sqrtf(dx * dx + dy * dy);
+
+            if (dist < RAIO_COLISAO_PROJ) {
+                inimigo->vida -= proj->dano;
+                if (inimigo->vida < 0) inimigo->vida = 0;
+
+                if (dist != 0) {
+                    float nx = dx / dist;
+                    float ny = dy / dist;
+                    inimigo->pos.x += nx * (KNOCKBACK_FORCE * 0.2f);
+                    inimigo->pos.y += ny * (KNOCKBACK_FORCE * 0.2f);
+                }
+
+                atingiu = 1;
+                break;
+            }
+            inimigo = inimigo->prox;
+        }
+
+        if (atingiu) {
+            Projetil *rem = proj;
+            if (anteriorProj == NULL) {
+                *listaProjetilPlayer = proj->prox;
+                proj = *listaProjetilPlayer;
+            } else {
+                anteriorProj->prox = proj->prox;
+                proj = anteriorProj->prox;
+            }
+            free(rem);
+        } else {
+            anteriorProj = proj;
+            proj = proj->prox;
+        }
+    }
+}
