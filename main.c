@@ -1,90 +1,131 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <time.h>
 #include <math.h>
-#include <raylib.h>
-#include "inimigo.h"
+#include "raylib.h"
 #include "player.h"
+#include "inimigo.h"
 #include "projetil.h"
+#include "ataque.h"
+#include "round.h"
+
+#define SCREEN_WIDTH 800
+#define SCREEN_HEIGHT 600
+#define MAP_WIDTH 800
+#define MAP_HEIGHT 600
 
 Projetil *listaProjetil = NULL;
 
-int main() {
-    const int largura = 800, altura = 600;
-    InitWindow(largura, altura, "Cowboy - Round 1");
+Inimigo *inimigoMaisProximoNoAlcance(Inimigo *lista, Vector2 pos, float alcance) {
+    Inimigo *melhor = NULL;
+    float menorDist = alcance;
+
+    while (lista != NULL) {
+        float dx = lista->pos.x - pos.x;
+        float dy = lista->pos.y - pos.y;
+        float dist = sqrtf(dx*dx + dy*dy);
+
+        if (dist <= menorDist) {
+            menorDist = dist;
+            melhor = lista;
+        }
+
+        lista = lista->prox;
+    }
+
+    return melhor;
+}
+
+int main(void) {
+    srand(time(NULL));
+
+    InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Jogo Faroeste - Demo");
     SetTargetFPS(60);
 
-    Player cowboy = {
-        .pos = {largura/2.0f, altura/2.0f},
-        .vida = 100,
-        .gold = 0,
-        .speed = 3.0f,
-        .invencivelTempo = 0.0f
-    };
+    Player player;
+    inicializarPlayer(&player);
 
     Inimigo *listaInimigos = NULL;
+    RoundInfo round;
+    round.numeroRound = 0;
+    iniciarRound(&round);
 
-    adicionarInimigo(&listaInimigos, (Vector2){100, 100}, 50, 0);
-    adicionarInimigo(&listaInimigos, (Vector2){700, 100}, 30, 1);
+    float deltaTime;
 
-    while (!WindowShouldClose()) {
-        float delta = GetFrameTime();
+    while (!WindowShouldClose() && player.vida > 0) {
+        deltaTime = GetFrameTime();
 
-        if (cowboy.invencivelTempo > 0.0f) {
-            cowboy.invencivelTempo -= delta;
-            if (cowboy.invencivelTempo < 0.0f) cowboy.invencivelTempo = 0.0f;
+        atualizarRound(&round, &listaInimigos, deltaTime);
+
+        atualizarPlayer(&player, deltaTime);
+
+        if (round.emAndamento && round.tempoParaComecar <= 0) {
+            removerInimigosMortos(&listaInimigos);
+
+            moverInimigos(listaInimigos, player.pos, deltaTime);
+
+            inimigosAtacam(&listaInimigos, &player, deltaTime);
+
+            atualizarProjetis(&listaProjetil, &player, listaInimigos, deltaTime);
+
+            projeteisDoPlayerAtacamInimigos(&listaProjetil, &listaInimigos);
+
+            if (player.tempoDesdeUltAtq >= player.cooldownAtq) {
+                Inimigo *alvo = inimigoMaisProximoNoAlcance(listaInimigos, player.pos, player.alcance);
+
+                if (alvo != NULL) {
+                    Vector2 dir = { alvo->pos.x - player.pos.x, alvo->pos.y - player.pos.y };
+                    float len = sqrtf(dir.x * dir.x + dir.y * dir.y);
+                    if (len != 0) {
+                        dir.x /= len;
+                        dir.y /= len;
+                    } else {
+                        dir.x = 1;
+                        dir.y = 0;
+                    }
+
+                    adicionarProjetil(&listaProjetil, player.pos, dir, 400.0f, player.dano, PROJETIL_PLAYER);
+
+                    player.tempoDesdeUltAtq = 0.0f;
+                }
+            }
         }
 
-        Vector2 direcao = {0.0f, 0.0f};
-
-        if (IsKeyDown(KEY_W)) direcao.y -= 1.0f;
-        if (IsKeyDown(KEY_S)) direcao.y += 1.0f;
-        if (IsKeyDown(KEY_A)) direcao.x -= 1.0f;
-        if (IsKeyDown(KEY_D)) direcao.x += 1.0f;
-
-        float mag = sqrtf(direcao.x * direcao.x + direcao.y * direcao.y);
-        if (mag > 0) {
-            direcao.x /= mag;
-            direcao.y /= mag;
-
-            cowboy.pos.x += direcao.x * cowboy.speed;
-            cowboy.pos.y += direcao.y * cowboy.speed;
-
-            if (cowboy.pos.x < 0) cowboy.pos.x = 0;
-            if (cowboy.pos.x > largura) cowboy.pos.x = largura;
-            if (cowboy.pos.y < 0) cowboy.pos.y = 0;
-            if (cowboy.pos.y > altura) cowboy.pos.y = altura;
+        if (round.finalizado) {
+            liberarListaInimigos(&listaInimigos);
+            listaInimigos = NULL;
+            iniciarRound(&round);
         }
-
-        moverInimigos(listaInimigos, cowboy.pos);
-
-        inimigosAtacam(&listaInimigos, &cowboy, delta);
-
-        atualizarProjetil(&listaProjetil, cowboy.pos, &cowboy.vida, &cowboy.invencivelTempo, delta);
 
         BeginDrawing();
-        ClearBackground(DARKGREEN);
+            ClearBackground(RAYWHITE);
 
-        DrawCircleV(cowboy.pos, 15, BLUE);
+            desenharPlayer(&player);
 
-        Inimigo *temp = listaInimigos;
-        while (temp != NULL) {
-            Color cor = (temp->tipo == 0) ? RED : ORANGE;
-            DrawCircleV(temp->pos, 12, cor);
-            temp = temp->prox;
-        }
+            Inimigo *temp = listaInimigos;
+            while (temp != NULL) {
+                Color c = (temp->tipo == 0) ? RED : ORANGE;
+                DrawCircleV(temp->pos, 15, c);
+                temp = temp->prox;
+            }
 
-        Projetil *pTemp = listaProjetil;
-        while (pTemp != NULL) {
-            DrawCircleV(pTemp->pos, 5, YELLOW);
-            pTemp = pTemp->prox;
-        }
+            desenharProjetis(listaProjetil);
 
-        DrawText(TextFormat("Vida: %d", cowboy.vida), 10, 10, 20, WHITE);
+            DrawText(TextFormat("Vida: %d", player.vida), 10, 10, 20, DARKGRAY);
+            DrawText(TextFormat("Round: %d", round.numeroRound), 10, 40, 20, DARKGRAY);
+
+            if (round.tempoParaComecar > 0) {
+                DrawText(TextFormat("Próximo round em: %.1f", round.tempoParaComecar), 10, 70, 20, RED);
+            } else if (round.emAndamento) {
+                DrawText("Ataque automático ativado", 10, 70, 20, DARKGRAY);
+            }
 
         EndDrawing();
     }
 
     liberarListaInimigos(&listaInimigos);
-    liberarListaProjetil(&listaProjetil);
+    liberarListaProjetis(&listaProjetil);
     CloseWindow();
+
     return 0;
 }
