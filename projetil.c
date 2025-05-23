@@ -1,55 +1,33 @@
 #include <stdlib.h>
-#include <math.h>   
+#include <math.h>
 #include "projetil.h"
+#include "inimigo.h"
 
-void adicionarProjetil(Projetil **lista, Vector2 pos, Vector2 dir, float speed, int dano) {
+void adicionarProjetil(Projetil **lista, Vector2 pos, Vector2 dir, float speed, int dano, TipoProjetil tipo) {
     Projetil *novo = (Projetil*)malloc(sizeof(Projetil));
+    if (!novo) return;
+
     novo->pos = pos;
     novo->dir = dir;
     novo->speed = speed;
-    novo->dano = dano;  
+    novo->dano = dano;
+    novo->tipo = tipo;
     novo->prox = NULL;
 
     if (*lista == NULL) {
         *lista = novo;
     } else {
         Projetil *temp = *lista;
-        while (temp->prox != NULL) {
-            temp = temp->prox;
-        }
+        while (temp->prox != NULL) temp = temp->prox;
         temp->prox = novo;
     }
 }
 
-void moverProjetil(Projetil **lista) {
-    Projetil *temp = *lista;
-    Projetil *anterior = NULL;
-
-    while (temp != NULL) {
-        temp->pos.x += temp->dir.x * temp->speed;
-        temp->pos.y += temp->dir.y * temp->speed;
-
-        if (temp->pos.x < 0 || temp->pos.x > 800 || temp->pos.y < 0 || temp->pos.y > 600) {
-            Projetil *remover = temp;
-            if (anterior == NULL) {
-                *lista = temp->prox;
-                temp = *lista;
-            } else {
-                anterior->prox = temp->prox;
-                temp = anterior->prox;
-            }
-            free(remover);
-            continue;
-        }
-        anterior = temp;
-        temp = temp->prox;
-    }
-}
-
-void desenharProjetil(Projetil *lista) {
+void desenharProjetis(Projetil *lista) {
     Projetil *temp = lista;
     while (temp != NULL) {
-        DrawCircleV(temp->pos, 5, YELLOW);
+        Color cor = (temp->tipo == PROJETIL_PLAYER) ? YELLOW : RED;
+        DrawCircleV(temp->pos, 5, cor);
         temp = temp->prox;
     }
 }
@@ -64,9 +42,8 @@ void removerProjetil(Projetil **lista, Projetil *alvo) {
     }
 
     Projetil *anterior = *lista;
-    while (anterior->prox != NULL && anterior->prox != alvo) {
+    while (anterior->prox != NULL && anterior->prox != alvo)
         anterior = anterior->prox;
-    }
 
     if (anterior->prox == alvo) {
         anterior->prox = alvo->prox;
@@ -74,7 +51,7 @@ void removerProjetil(Projetil **lista, Projetil *alvo) {
     }
 }
 
-void liberarListaProjetil(Projetil **lista) {
+void liberarListaProjetis(Projetil **lista) {
     Projetil *temp = *lista;
     while (temp != NULL) {
         Projetil *remover = temp;
@@ -84,7 +61,7 @@ void liberarListaProjetil(Projetil **lista) {
     *lista = NULL;
 }
 
-void atualizarProjetil(Projetil **lista, Vector2 playerPos, int *playerVida, float *playerInvencivelTempo, float delta) {
+void atualizarProjetis(Projetil **lista, Player *player, Inimigo *listaInimigos, float delta) {
     Projetil *temp = *lista;
     Projetil *anterior = NULL;
 
@@ -92,20 +69,39 @@ void atualizarProjetil(Projetil **lista, Vector2 playerPos, int *playerVida, flo
         temp->pos.x += temp->dir.x * temp->speed * delta;
         temp->pos.y += temp->dir.y * temp->speed * delta;
 
-        float dx = playerPos.x - temp->pos.x;
-        float dy = playerPos.y - temp->pos.y;
-        float dist = sqrtf(dx*dx + dy*dy);
+        int removerProjetil = 0;
 
-        int colidiu = dist < 15.0f;
+        if (temp->tipo == PROJETIL_PLAYER) {
+            Inimigo *inimigo = listaInimigos;
+            while (inimigo != NULL) {
+                float dx = inimigo->pos.x - temp->pos.x;
+                float dy = inimigo->pos.y - temp->pos.y;
+                float dist = sqrtf(dx*dx + dy*dy);
 
-        if ((colidiu && *playerInvencivelTempo <= 0.0f) ||
-            temp->pos.x < 0 || temp->pos.x > 800 || temp->pos.y < 0 || temp->pos.y > 600) {
-            
-            if (colidiu) {
-                *playerVida -= temp->dano;
-                *playerInvencivelTempo = 1.0f;
+                if (dist < 20.0f) {
+                    inimigo->vida -= temp->dano;
+                    removerProjetil = 1;
+                    break;
+                }
+                inimigo = inimigo->prox;
             }
+        } else if (temp->tipo == PROJETIL_INIMIGO) {
+            float dx = player->pos.x - temp->pos.x;
+            float dy = player->pos.y - temp->pos.y;
+            float dist = sqrtf(dx*dx + dy*dy);
 
+            if (dist < 15.0f && player->invencivelTempo <= 0.0f) {
+                player->vida -= temp->dano;
+                player->invencivelTempo = 1.0f;
+                removerProjetil = 1;
+            }
+        }
+
+        if (temp->pos.x < 0 || temp->pos.x > 800 || temp->pos.y < 0 || temp->pos.y > 600) {
+            removerProjetil = 1;
+        }
+
+        if (removerProjetil) {
             Projetil *aRemover = temp;
             if (anterior == NULL) {
                 *lista = temp->prox;
