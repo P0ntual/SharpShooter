@@ -63,7 +63,9 @@ int main(void) {
 
         if (round.finalizado && IsKeyPressed(KEY_ENTER)) {
             liberarListaInimigos(&listaInimigos);
+            liberarListaProjetis(&listaProjetil);
             listaInimigos = NULL;
+            listaProjetil = NULL;
             iniciarRound(&round);
         }
 
@@ -72,28 +74,39 @@ int main(void) {
 
         if (round.emAndamento && round.tempoParaComecar <= 0) {
             removerInimigosMortos(&listaInimigos);
-            moverInimigos(listaInimigos, player.pos, deltaTime);
-            inimigosAtacam(&listaInimigos, &player, deltaTime);
-            atualizarProjetis(&listaProjetil, &player, listaInimigos, deltaTime);
-            projeteisDoPlayerAtacamInimigos(&listaProjetil, &listaInimigos);
 
-            if (player.tempoDesdeUltAtq >= player.cooldownAtq) {
-                Inimigo *alvo = inimigoMaisProximoNoAlcance(listaInimigos, player.pos, player.alcance);
+            if (listaInimigos == NULL) {
+                liberarListaProjetis(&listaProjetil);
+                listaProjetil = NULL;
+                liberarListaInimigos(&listaInimigos);
+                listaInimigos = NULL;
 
-                if (alvo != NULL) {
-                    Vector2 dir = { alvo->pos.x - player.pos.x, alvo->pos.y - player.pos.y };
-                    float len = sqrtf(dir.x * dir.x + dir.y * dir.y);
-                    if (len != 0) {
-                        dir.x /= len;
-                        dir.y /= len;
-                    } else {
-                        dir.x = 1;
-                        dir.y = 0;
+                round.emAndamento = 0;
+                round.finalizado = 1;
+            } else {
+                moverInimigos(listaInimigos, player.pos, deltaTime);
+                inimigosAtacam(&listaInimigos, &player, deltaTime);
+                atualizarProjetis(&listaProjetil, &player, listaInimigos, deltaTime);
+                projeteisDoPlayerAtacamInimigos(&listaProjetil, &listaInimigos);
+
+                if (player.tempoDesdeUltAtq >= player.cooldownAtq) {
+                    Inimigo *alvo = inimigoMaisProximoNoAlcance(listaInimigos, player.pos, player.alcance);
+
+                    if (alvo != NULL) {
+                        Vector2 dir = { alvo->pos.x - player.pos.x, alvo->pos.y - player.pos.y };
+                        float len = sqrtf(dir.x * dir.x + dir.y * dir.y);
+                        if (len != 0) {
+                            dir.x /= len;
+                            dir.y /= len;
+                        } else {
+                            dir.x = 1;
+                            dir.y = 0;
+                        }
+
+                        adicionarProjetil(&listaProjetil, player.pos, dir, 400.0f, player.dano, PROJETIL_PLAYER);
+
+                        resetarCooldownAtq(&player); 
                     }
-
-                    adicionarProjetil(&listaProjetil, player.pos, dir, 400.0f, player.dano, PROJETIL_PLAYER);
-
-                    resetarCooldownAtq(&player); 
                 }
             }
         }
@@ -108,8 +121,10 @@ int main(void) {
             desenharPlayer(&player, spritePlayer);
         }
 
-        desenharInimigos(listaInimigos, spriteMelee, spriteRanged);
-        desenharProjetis(listaProjetil);
+        if (round.emAndamento) {
+            desenharInimigos(listaInimigos, spriteMelee, spriteRanged);
+            desenharProjetis(listaProjetil);
+        }
 
         DrawText(TextFormat("Vida: %d", player.vida), 10, 10, 20, DARKGRAY);
         DrawText(TextFormat("Round: %d", round.numeroRound), 10, 40, 20, DARKGRAY);
