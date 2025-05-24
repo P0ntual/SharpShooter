@@ -45,6 +45,7 @@ int main(void) {
     Texture2D spriteMelee = LoadTexture("sprites/InimigoFaca.png");
     Texture2D spriteRanged = LoadTexture("sprites/InimigoRanged.png");
     Texture2D spriteProjetil = LoadTexture("sprites/projetil.png");
+    Texture2D spriteCenario = LoadTexture("sprites/Cenario.png"); 
 
     SetTargetFPS(60);
 
@@ -114,6 +115,8 @@ int main(void) {
         BeginDrawing();
         ClearBackground(RAYWHITE);
 
+        DrawTexture(spriteCenario, 0, 0, WHITE);  
+
         if (player.tempoDesdeUltAtq < player.cooldownAtq) {
             desenharPlayer(&player, spritePlayerShot);
         } else {
@@ -149,6 +152,7 @@ int main(void) {
     UnloadTexture(spriteMelee);
     UnloadTexture(spriteRanged);
     UnloadTexture(spriteProjetil);
+    UnloadTexture(spriteCenario);  
 
     CloseWindow();
     return 0;
