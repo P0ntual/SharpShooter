@@ -2,6 +2,7 @@
 #include <math.h>
 #include "projetil.h"
 #include "inimigo.h"
+#include "raylib.h"  
 
 void adicionarProjetil(Projetil **lista, Vector2 pos, Vector2 dir, float speed, int dano, TipoProjetil tipo) {
     Projetil *novo = (Projetil*)malloc(sizeof(Projetil));
@@ -109,11 +110,14 @@ void atualizarProjetis(Projetil **lista, Player *player, Inimigo *listaInimigos,
     }
 }
 
-void desenharProjetis(Projetil *lista) {
+void desenharProjetis(Projetil *lista, Texture2D spriteProjetil) {
     Projetil *temp = lista;
     while (temp != NULL) {
-        Color cor = (temp->tipo == PROJETIL_PLAYER) ? BLUE : RED;
-        DrawCircleV(temp->pos, 5, cor);  
+        float halfWidth = spriteProjetil.width / 2.0f;
+        float halfHeight = spriteProjetil.height / 2.0f;
+
+        DrawTextureV(spriteProjetil, (Vector2){temp->pos.x - halfWidth, temp->pos.y - halfHeight}, WHITE);
+
         temp = temp->prox;
     }
 }

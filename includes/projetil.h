@@ -25,6 +25,6 @@ void moverProjetis(Projetil **lista, float delta);
 void removerProjetil(Projetil **lista, Projetil *alvo);
 void liberarListaProjetis(Projetil **lista);
 void atualizarProjetis(Projetil **lista, Player *player, Inimigo *listaInimigos, float delta);
-void desenharProjetis(Projetil *lista);  
+void desenharProjetis(Projetil *lista, Texture2D spriteProjetil);
 
 #endif

@@ -38,14 +38,14 @@ Inimigo *inimigoMaisProximoNoAlcance(Inimigo *lista, Vector2 pos, float alcance)
 
 int main(void) {
     srand(time(NULL));
-
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Jogo Faroeste - Demo");
 
     Texture2D spritePlayer = LoadTexture("sprites/player.png");
-    Texture2D spritePlayerShot = LoadTexture("sprites/playerShot.png"); 
+    Texture2D spritePlayerShot = LoadTexture("sprites/playerShot.png");
     Texture2D spriteMelee = LoadTexture("sprites/InimigoFaca.png");
     Texture2D spriteRanged = LoadTexture("sprites/InimigoRanged.png");
-    Texture2D spriteProjetil = LoadTexture("sprites/projetil_inimigo.png");
+    Texture2D spriteProjetil = LoadTexture("sprites/projetil.png");
+
     SetTargetFPS(60);
 
     Player player;
@@ -73,6 +73,8 @@ int main(void) {
         atualizarPlayer(&player, deltaTime);
 
         if (round.emAndamento && round.tempoParaComecar <= 0) {
+            projeteisDoPlayerAtacamInimigos(&listaProjetil, &listaInimigos); 
+
             removerInimigosMortos(&listaInimigos);
 
             if (listaInimigos == NULL) {
@@ -87,7 +89,6 @@ int main(void) {
                 moverInimigos(listaInimigos, player.pos, deltaTime);
                 inimigosAtacam(&listaInimigos, &player, deltaTime);
                 atualizarProjetis(&listaProjetil, &player, listaInimigos, deltaTime);
-                projeteisDoPlayerAtacamInimigos(&listaProjetil, &listaInimigos);
 
                 if (player.tempoDesdeUltAtq >= player.cooldownAtq) {
                     Inimigo *alvo = inimigoMaisProximoNoAlcance(listaInimigos, player.pos, player.alcance);
@@ -104,15 +105,13 @@ int main(void) {
                         }
 
                         adicionarProjetil(&listaProjetil, player.pos, dir, 400.0f, player.dano, PROJETIL_PLAYER);
-
-                        resetarCooldownAtq(&player); 
+                        resetarCooldownAtq(&player);
                     }
                 }
             }
         }
 
         BeginDrawing();
-
         ClearBackground(RAYWHITE);
 
         if (player.tempoDesdeUltAtq < player.cooldownAtq) {
@@ -123,7 +122,7 @@ int main(void) {
 
         if (round.emAndamento) {
             desenharInimigos(listaInimigos, spriteMelee, spriteRanged);
-            desenharProjetis(listaProjetil);
+            desenharProjetis(listaProjetil, spriteProjetil);
         }
 
         DrawText(TextFormat("Vida: %d", player.vida), 10, 10, 20, DARKGRAY);
@@ -152,6 +151,5 @@ int main(void) {
     UnloadTexture(spriteProjetil);
 
     CloseWindow();
-
     return 0;
 }
