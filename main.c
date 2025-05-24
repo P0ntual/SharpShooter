@@ -23,7 +23,7 @@ Inimigo *inimigoMaisProximoNoAlcance(Inimigo *lista, Vector2 pos, float alcance)
     while (lista != NULL) {
         float dx = lista->pos.x - pos.x;
         float dy = lista->pos.y - pos.y;
-        float dist = sqrtf(dx*dx + dy*dy);
+        float dist = sqrtf(dx * dx + dy * dy);
 
         if (dist <= menorDist) {
             menorDist = dist;
@@ -40,6 +40,12 @@ int main(void) {
     srand(time(NULL));
 
     InitWindow(SCREEN_WIDTH, SCREEN_HEIGHT, "Jogo Faroeste - Demo");
+
+    Texture2D spritePlayer = LoadTexture("sprites/player.png");
+    Texture2D spritePlayerShot = LoadTexture("sprites/playerShot.png"); 
+    Texture2D spriteMelee = LoadTexture("sprites/InimigoFaca.png");
+    Texture2D spriteRanged = LoadTexture("sprites/InimigoRanged.png");
+    Texture2D spriteProjetil = LoadTexture("sprites/projetil_inimigo.png");
     SetTargetFPS(60);
 
     Player player;
@@ -55,19 +61,20 @@ int main(void) {
     while (!WindowShouldClose() && player.vida > 0) {
         deltaTime = GetFrameTime();
 
-        atualizarRound(&round, &listaInimigos, deltaTime);
+        if (round.finalizado && IsKeyPressed(KEY_ENTER)) {
+            liberarListaInimigos(&listaInimigos);
+            listaInimigos = NULL;
+            iniciarRound(&round);
+        }
 
+        atualizarRound(&round, &listaInimigos, deltaTime);
         atualizarPlayer(&player, deltaTime);
 
         if (round.emAndamento && round.tempoParaComecar <= 0) {
             removerInimigosMortos(&listaInimigos);
-
             moverInimigos(listaInimigos, player.pos, deltaTime);
-
             inimigosAtacam(&listaInimigos, &player, deltaTime);
-
             atualizarProjetis(&listaProjetil, &player, listaInimigos, deltaTime);
-
             projeteisDoPlayerAtacamInimigos(&listaProjetil, &listaInimigos);
 
             if (player.tempoDesdeUltAtq >= player.cooldownAtq) {
@@ -86,46 +93,50 @@ int main(void) {
 
                     adicionarProjetil(&listaProjetil, player.pos, dir, 400.0f, player.dano, PROJETIL_PLAYER);
 
-                    player.tempoDesdeUltAtq = 0.0f;
+                    resetarCooldownAtq(&player); 
                 }
             }
         }
 
-        if (round.finalizado) {
-            liberarListaInimigos(&listaInimigos);
-            listaInimigos = NULL;
-            iniciarRound(&round);
+        BeginDrawing();
+
+        ClearBackground(RAYWHITE);
+
+        if (player.tempoDesdeUltAtq < player.cooldownAtq) {
+            desenharPlayer(&player, spritePlayerShot);
+        } else {
+            desenharPlayer(&player, spritePlayer);
         }
 
-        BeginDrawing();
-            ClearBackground(RAYWHITE);
+        desenharInimigos(listaInimigos, spriteMelee, spriteRanged);
+        desenharProjetis(listaProjetil);
 
-            desenharPlayer(&player);
+        DrawText(TextFormat("Vida: %d", player.vida), 10, 10, 20, DARKGRAY);
+        DrawText(TextFormat("Round: %d", round.numeroRound), 10, 40, 20, DARKGRAY);
 
-            Inimigo *temp = listaInimigos;
-            while (temp != NULL) {
-                Color c = (temp->tipo == 0) ? RED : ORANGE;
-                DrawCircleV(temp->pos, 15, c);
-                temp = temp->prox;
-            }
+        if (round.tempoParaComecar > 0) {
+            DrawText(TextFormat("Próximo round em: %.1f", round.tempoParaComecar), 10, 70, 20, RED);
+        } else if (round.emAndamento) {
+            DrawText("Ataque automático ativado", 10, 70, 20, DARKGRAY);
+        }
 
-            desenharProjetis(listaProjetil);
-
-            DrawText(TextFormat("Vida: %d", player.vida), 10, 10, 20, DARKGRAY);
-            DrawText(TextFormat("Round: %d", round.numeroRound), 10, 40, 20, DARKGRAY);
-
-            if (round.tempoParaComecar > 0) {
-                DrawText(TextFormat("Próximo round em: %.1f", round.tempoParaComecar), 10, 70, 20, RED);
-            } else if (round.emAndamento) {
-                DrawText("Ataque automático ativado", 10, 70, 20, DARKGRAY);
-            }
+        if (round.finalizado) {
+            DrawText("Round finalizado! Pressione ENTER para continuar.", 10, 100, 20, BLUE);
+        }
 
         EndDrawing();
     }
 
     liberarListaInimigos(&listaInimigos);
     liberarListaProjetis(&listaProjetil);
+
+    UnloadTexture(spritePlayer);
+    UnloadTexture(spritePlayerShot);
+    UnloadTexture(spriteMelee);
+    UnloadTexture(spriteRanged);
+    UnloadTexture(spriteProjetil);
+
     CloseWindow();
 
     return 0;
-} 
+}

@@ -28,5 +28,6 @@ void moverInimigos(Inimigo *lista, Vector2 playerPos, float delta);
 void inimigosAtacam(Inimigo **lista, Player *player, float delta);
 void aplicarKnockbackInimigo(Inimigo *inimigo, Vector2 direcao, float intensidade, float duracao);
 void removerInimigosMortos(Inimigo **lista);
+void desenharInimigos(Inimigo *lista, Texture2D spriteInimigoMelee, Texture2D spriteInimigoRanged);
 
 #endif

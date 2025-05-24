@@ -23,15 +23,6 @@ void adicionarProjetil(Projetil **lista, Vector2 pos, Vector2 dir, float speed, 
     }
 }
 
-void desenharProjetis(Projetil *lista) {
-    Projetil *temp = lista;
-    while (temp != NULL) {
-        Color cor = (temp->tipo == PROJETIL_PLAYER) ? YELLOW : RED;
-        DrawCircleV(temp->pos, 5, cor);
-        temp = temp->prox;
-    }
-}
-
 void removerProjetil(Projetil **lista, Projetil *alvo) {
     if (*lista == NULL || alvo == NULL) return;
 
@@ -115,5 +106,14 @@ void atualizarProjetis(Projetil **lista, Player *player, Inimigo *listaInimigos,
             anterior = temp;
             temp = temp->prox;
         }
+    }
+}
+
+void desenharProjetis(Projetil *lista) {
+    Projetil *temp = lista;
+    while (temp != NULL) {
+        Color cor = (temp->tipo == PROJETIL_PLAYER) ? BLUE : RED;
+        DrawCircleV(temp->pos, 5, cor);  
+        temp = temp->prox;
     }
 }

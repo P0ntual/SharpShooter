@@ -211,3 +211,14 @@ void inimigosAtacam(Inimigo **lista, Player *player, float delta) {
         temp = temp->prox;
     }
 }
+
+void desenharInimigos(Inimigo *lista, Texture2D spriteInimigoMelee, Texture2D spriteInimigoRanged) {
+    while (lista != NULL) {
+        if (lista->tipo == 0) {
+            DrawTextureV(spriteInimigoMelee, lista->pos, WHITE);
+        } else {
+            DrawTextureV(spriteInimigoRanged, lista->pos, WHITE);
+        }
+        lista = lista->prox;
+    }
+}

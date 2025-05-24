@@ -14,9 +14,7 @@ typedef struct {
 } RoundInfo;
 
 void iniciarRound(RoundInfo *info);
-void atualizarContagemRound(RoundInfo *info, float deltaTime);
 void spawnarInimigosRound(RoundInfo *info, Inimigo **lista);
-void checarFimRound(RoundInfo *info, Inimigo *lista);
 void atualizarRound(RoundInfo *info, Inimigo **lista, float deltaTime);
 
 #endif

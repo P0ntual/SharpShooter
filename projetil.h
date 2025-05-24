@@ -22,9 +22,9 @@ typedef struct projetil {
 
 void adicionarProjetil(Projetil **lista, Vector2 pos, Vector2 dir, float speed, int dano, TipoProjetil tipo);
 void moverProjetis(Projetil **lista, float delta);
-void desenharProjetis(Projetil *lista);
 void removerProjetil(Projetil **lista, Projetil *alvo);
 void liberarListaProjetis(Projetil **lista);
 void atualizarProjetis(Projetil **lista, Player *player, Inimigo *listaInimigos, float delta);
+void desenharProjetis(Projetil *lista);  
 
 #endif

@@ -3,7 +3,6 @@
 #include "raylib.h"
 #include <stdlib.h>
 #include <stdbool.h>
-#include <time.h>
 
 void iniciarRound(RoundInfo *info) {
     info->numeroRound += 1;
@@ -37,30 +36,28 @@ void spawnarInimigosRound(RoundInfo *info, Inimigo **lista) {
 }
 
 void atualizarRound(RoundInfo *info, Inimigo **lista, float deltaTime) {
-    if (info->tempoParaComecar > 0.0f) {
+    if (!info->emAndamento && info->tempoParaComecar > 0.0f) {
         info->tempoParaComecar -= deltaTime;
         if (info->tempoParaComecar <= 0.0f) {
             info->tempoParaComecar = 0.0f;
             info->emAndamento = true;
+            spawnarInimigosRound(info, lista);
         }
     }
 
-    if (info->emAndamento && info->inimigosRestantes == 0 && *lista == NULL) {
-        spawnarInimigosRound(info, lista);
-    }
-
-    int vivos = 0;
-    Inimigo *temp = *lista;
-    while (temp != NULL) {
-        if (temp->vida > 0) {
-            vivos++;
+    if (info->emAndamento) {
+        int vivos = 0;
+        Inimigo *temp = *lista;
+        while (temp != NULL) {
+            if (temp->vida > 0) vivos++;
+            temp = temp->prox;
         }
-        temp = temp->prox;
-    }
-    info->inimigosRestantes = vivos;
 
-    if (info->emAndamento && vivos == 0) {
-        info->finalizado = true;
-        info->emAndamento = false;
+        info->inimigosRestantes = vivos;
+
+        if (vivos == 0) {
+            info->emAndamento = false;
+            info->finalizado = true;
+        }
     }
 }

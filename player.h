@@ -17,9 +17,11 @@ typedef struct player {
 } Player;
 
 void inicializarPlayer(Player* player);
-void desenharPlayer(Player* player);
+void desenharPlayer(Player* player, Texture2D spritePlayer);
 void atualizarPlayer(Player* player, float delta);
 int podeAtacar(Player* player);
+void resetarCooldownAtq(Player* player); 
 void aplicarKnockbackPlayer(Player* player, Vector2 direcao, float intensidade, float duracao);
+void aplicarDano(Player* player, int dano);
 
 #endif

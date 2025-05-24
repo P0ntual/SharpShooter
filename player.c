@@ -23,14 +23,14 @@ void inicializarPlayer(Player* player) {
     player->tempoDesdeUltAtq = player->cooldownAtq;
 }
 
-void desenharPlayer(Player* player) {
+void desenharPlayer(Player* player, Texture2D sprite) {
     if (player->invencivelTempo > 0.0f) {
         int piscar = ((int)(player->invencivelTempo * 10)) % 2;
         if (piscar == 0) {
-            DrawCircleV(player->pos, PLAYER_RADIUS, RED);
+            DrawTextureV(sprite, (Vector2){player->pos.x - sprite.width/2, player->pos.y - sprite.height/2}, WHITE);
         }
     } else {
-        DrawCircleV(player->pos, PLAYER_RADIUS, RED);
+        DrawTextureV(sprite, (Vector2){player->pos.x - sprite.width/2, player->pos.y - sprite.height/2}, WHITE);
     }
 }
 
