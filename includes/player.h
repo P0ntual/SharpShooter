@@ -3,6 +3,8 @@
 
 #include <raylib.h>
 
+typedef struct Inimigo Inimigo;  
+
 typedef struct player {
     Vector2 pos;
     float velocidade;
@@ -14,6 +16,7 @@ typedef struct player {
     float tempoDesdeUltAtq;  
     Vector2 knockback;        
     float knockbackTempo;    
+    Inimigo *inimigoFocado; 
 } Player;
 
 void inicializarPlayer(Player* player);

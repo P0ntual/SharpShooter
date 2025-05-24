@@ -13,28 +13,9 @@
 #define SCREEN_HEIGHT 600
 #define MAP_WIDTH 800
 #define MAP_HEIGHT 600
+#define MAX_ROUNDS 8  
 
 Projetil *listaProjetil = NULL;
-
-Inimigo *inimigoMaisProximoNoAlcance(Inimigo *lista, Vector2 pos, float alcance) {
-    Inimigo *melhor = NULL;
-    float menorDist = alcance;
-
-    while (lista != NULL) {
-        float dx = lista->pos.x - pos.x;
-        float dy = lista->pos.y - pos.y;
-        float dist = sqrtf(dx * dx + dy * dy);
-
-        if (dist <= menorDist) {
-            menorDist = dist;
-            melhor = lista;
-        }
-
-        lista = lista->prox;
-    }
-
-    return melhor;
-}
 
 int main(void) {
     srand(time(NULL));
@@ -45,12 +26,13 @@ int main(void) {
     Texture2D spriteMelee = LoadTexture("sprites/InimigoFaca.png");
     Texture2D spriteRanged = LoadTexture("sprites/InimigoRanged.png");
     Texture2D spriteProjetil = LoadTexture("sprites/projetil.png");
-    Texture2D spriteCenario = LoadTexture("sprites/Cenario.png"); 
+    Texture2D spriteCenario = LoadTexture("sprites/Cenario.png");
 
     SetTargetFPS(60);
 
     Player player;
     inicializarPlayer(&player);
+    player.inimigoFocado = NULL;  
 
     Inimigo *listaInimigos = NULL;
     RoundInfo round;
@@ -63,19 +45,22 @@ int main(void) {
         deltaTime = GetFrameTime();
 
         if (round.finalizado && IsKeyPressed(KEY_ENTER)) {
-            liberarListaInimigos(&listaInimigos);
-            liberarListaProjetis(&listaProjetil);
-            listaInimigos = NULL;
-            listaProjetil = NULL;
-            iniciarRound(&round);
+            if (round.numeroRound < MAX_ROUNDS) {  
+                liberarListaInimigos(&listaInimigos);
+                liberarListaProjetis(&listaProjetil);
+                listaInimigos = NULL;
+                listaProjetil = NULL;
+                iniciarRound(&round);
+            }
         }
 
         atualizarRound(&round, &listaInimigos, deltaTime);
         atualizarPlayer(&player, deltaTime);
 
-        if (round.emAndamento && round.tempoParaComecar <= 0) {
-            projeteisDoPlayerAtacamInimigos(&listaProjetil, &listaInimigos); 
+        atualizarInimigoFocado(listaInimigos, &player);  
 
+        if (round.emAndamento && round.tempoParaComecar <= 0) {
+            projeteisDoPlayerAtacamInimigos(&listaProjetil, &listaInimigos);
             removerInimigosMortos(&listaInimigos);
 
             if (listaInimigos == NULL) {
@@ -92,10 +77,11 @@ int main(void) {
                 atualizarProjetis(&listaProjetil, &player, listaInimigos, deltaTime);
 
                 if (player.tempoDesdeUltAtq >= player.cooldownAtq) {
-                    Inimigo *alvo = inimigoMaisProximoNoAlcance(listaInimigos, player.pos, player.alcance);
-
-                    if (alvo != NULL) {
-                        Vector2 dir = { alvo->pos.x - player.pos.x, alvo->pos.y - player.pos.y };
+                    if (player.inimigoFocado != NULL) {
+                        Vector2 dir = {
+                            player.inimigoFocado->pos.x - player.pos.x,
+                            player.inimigoFocado->pos.y - player.pos.y
+                        };
                         float len = sqrtf(dir.x * dir.x + dir.y * dir.y);
                         if (len != 0) {
                             dir.x /= len;
@@ -124,8 +110,26 @@ int main(void) {
         }
 
         if (round.emAndamento) {
-            desenharInimigos(listaInimigos, spriteMelee, spriteRanged);
+            desenharInimigos(listaInimigos, spriteMelee, spriteRanged, player.inimigoFocado);
             desenharProjetis(listaProjetil, spriteProjetil);
+
+            if (player.inimigoFocado != NULL) {
+                Texture2D spriteFoco;
+                if (player.inimigoFocado->tipo == INIMIGO_MELEE) {
+                    spriteFoco = spriteMelee;
+                } else {
+                    spriteFoco = spriteRanged;
+                }
+
+                Rectangle rectFoco = {
+                    player.inimigoFocado->pos.x - spriteFoco.width / 2.0f,
+                    player.inimigoFocado->pos.y - spriteFoco.height / 2.0f,
+                    (float)spriteFoco.width,
+                    (float)spriteFoco.height
+                };
+
+                DrawRectangleLinesEx(rectFoco, 3, WHITE);
+            }
         }
 
         DrawText(TextFormat("Vida: %d", player.vida), 10, 10, 20, DARKGRAY);
@@ -138,7 +142,11 @@ int main(void) {
         }
 
         if (round.finalizado) {
-            DrawText("Round finalizado! Pressione ENTER para continuar.", 10, 100, 20, BLUE);
+            if (round.numeroRound >= MAX_ROUNDS) {
+                DrawText("Jogo finalizado! Parabéns!", 10, 100, 20, GREEN);
+            } else {
+                DrawText("Round finalizado! Pressione ENTER para continuar.", 10, 100, 20, BLUE);
+            }
         }
 
         EndDrawing();
@@ -152,7 +160,7 @@ int main(void) {
     UnloadTexture(spriteMelee);
     UnloadTexture(spriteRanged);
     UnloadTexture(spriteProjetil);
-    UnloadTexture(spriteCenario);  
+    UnloadTexture(spriteCenario);
 
     CloseWindow();
     return 0;

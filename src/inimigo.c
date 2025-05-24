@@ -22,9 +22,9 @@ void adicionarInimigo(Inimigo **lista, Vector2 pos, int vida, int tipo) {
     novo->knockbackTempo = 0.0f;
 
     if (tipo == 0) {
-        novo->velocidade = 100.0f;  
+        novo->velocidade = 100.0f;
     } else {
-        novo->velocidade = 60.0f;   
+        novo->velocidade = 60.0f;
     }
 
     *lista = novo;
@@ -105,7 +105,7 @@ void moverInimigos(Inimigo *lista, Vector2 playerPos, float delta) {
             temp->pos.x += temp->knockback.x * delta;
             temp->pos.y += temp->knockback.y * delta;
             temp->knockbackTempo -= delta;
-            temp->knockback.x *= 0.8f; 
+            temp->knockback.x *= 0.8f;
             temp->knockback.y *= 0.8f;
 
             if (temp->pos.x < 0) temp->pos.x = 0;
@@ -113,7 +113,7 @@ void moverInimigos(Inimigo *lista, Vector2 playerPos, float delta) {
             if (temp->pos.y < 0) temp->pos.y = 0;
             if (temp->pos.y > MAP_HEIGHT) temp->pos.y = MAP_HEIGHT;
         } else {
-            if (temp->tipo == 0) {  
+            if (temp->tipo == 0) {
                 float dx = playerPos.x - temp->pos.x;
                 float dy = playerPos.y - temp->pos.y;
                 float dist = sqrtf(dx*dx + dy*dy);
@@ -122,12 +122,11 @@ void moverInimigos(Inimigo *lista, Vector2 playerPos, float delta) {
                     temp->pos.x += (dx / dist) * temp->velocidade * delta;
                     temp->pos.y += (dy / dist) * temp->velocidade * delta;
                 }
-            } else if (temp->tipo == 1) {  
-
+            } else if (temp->tipo == 1) {
                 temp->tempoDirecao -= delta;
 
                 if (temp->tempoDirecao <= 0.0f) {
-                    float x = ((float)(rand() % 2000) / 1000.0f) - 1.0f; 
+                    float x = ((float)(rand() % 2000) / 1000.0f) - 1.0f;
                     float y = ((float)(rand() % 2000) / 1000.0f) - 1.0f;
                     float length = sqrtf(x*x + y*y);
                     if (length != 0) {
@@ -137,7 +136,7 @@ void moverInimigos(Inimigo *lista, Vector2 playerPos, float delta) {
                         temp->direcaoAleatoria.x = 0;
                         temp->direcaoAleatoria.y = 0;
                     }
-                    temp->tempoDirecao = 2.0f; 
+                    temp->tempoDirecao = 2.0f;
                 }
 
                 temp->pos.x += temp->direcaoAleatoria.x * temp->velocidade * delta;
@@ -172,8 +171,7 @@ void inimigosAtacam(Inimigo **lista, Player *player, float delta) {
     Inimigo *temp = *lista;
 
     while (temp != NULL) {
-        if (temp->tipo == 0) {  
-
+        if (temp->tipo == 0) {
             float dx = player->pos.x - temp->pos.x;
             float dy = player->pos.y - temp->pos.y;
             float dist = sqrtf(dx*dx + dy*dy);
@@ -184,14 +182,12 @@ void inimigosAtacam(Inimigo **lista, Player *player, float delta) {
 
                 if (dist > 0.0f) {
                     Vector2 direcao = {dx / dist, dy / dist};
-                    float knockbackForca = 300.0f; 
+                    float knockbackForca = 300.0f;
                     player->pos.x += direcao.x * knockbackForca * delta;
                     player->pos.y += direcao.y * knockbackForca * delta;
                 }
             }
-
-        } else if (temp->tipo == 1) { 
-
+        } else if (temp->tipo == 1) {
             temp->fireCooldown -= delta;
 
             if (temp->fireCooldown <= 0.0f) {
@@ -204,7 +200,7 @@ void inimigosAtacam(Inimigo **lista, Player *player, float delta) {
                     direcao.y /= length;
                 }
                 adicionarProjetil(&listaProjetil, temp->pos, direcao, 300.0f, 15, PROJETIL_INIMIGO);
-                temp->fireCooldown = 2.0f; 
+                temp->fireCooldown = 2.0f;
             }
         }
 
@@ -212,12 +208,38 @@ void inimigosAtacam(Inimigo **lista, Player *player, float delta) {
     }
 }
 
-void desenharInimigos(Inimigo *lista, Texture2D spriteInimigoMelee, Texture2D spriteInimigoRanged) {
+static void desenharInimigoComBorda(Vector2 pos, Texture2D sprite) {
+    Color borda = WHITE;
+    float offset = 2.0f;
+
+    Vector2 posCentralizada = { pos.x - sprite.width / 2, pos.y - sprite.height / 2 };
+
+    DrawTexture(sprite, posCentralizada.x - offset, posCentralizada.y, borda);
+    DrawTexture(sprite, posCentralizada.x + offset, posCentralizada.y, borda);
+    DrawTexture(sprite, posCentralizada.x, posCentralizada.y - offset, borda);
+    DrawTexture(sprite, posCentralizada.x, posCentralizada.y + offset, borda);
+    DrawTexture(sprite, posCentralizada.x - offset, posCentralizada.y - offset, borda);
+    DrawTexture(sprite, posCentralizada.x - offset, posCentralizada.y + offset, borda);
+    DrawTexture(sprite, posCentralizada.x + offset, posCentralizada.y - offset, borda);
+    DrawTexture(sprite, posCentralizada.x + offset, posCentralizada.y + offset, borda);
+
+    DrawTexture(sprite, posCentralizada.x, posCentralizada.y, WHITE);
+}
+
+void desenharInimigos(Inimigo *lista, Texture2D spriteInimigoMelee, Texture2D spriteInimigoRanged, Inimigo *inimigoFocado) {
     while (lista != NULL) {
-        if (lista->tipo == 0) {
-            DrawTextureV(spriteInimigoMelee, lista->pos, WHITE);
+        if (lista == inimigoFocado) {
+            if (lista->tipo == 0) {
+                desenharInimigoComBorda(lista->pos, spriteInimigoMelee);
+            } else {
+                desenharInimigoComBorda(lista->pos, spriteInimigoRanged);
+            }
         } else {
-            DrawTextureV(spriteInimigoRanged, lista->pos, WHITE);
+            if (lista->tipo == 0) {
+                DrawTextureV(spriteInimigoMelee, lista->pos, WHITE);
+            } else {
+                DrawTextureV(spriteInimigoRanged, lista->pos, WHITE);
+            }
         }
         lista = lista->prox;
     }

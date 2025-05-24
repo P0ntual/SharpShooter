@@ -1,11 +1,14 @@
 #ifndef INIMIGO_H
 #define INIMIGO_H
 
-#include <raylib.h>
-#include "player.h"
+#include <raylib.h> 
+#include <player.h>
 
 #define MAP_WIDTH 800
 #define MAP_HEIGHT 600
+
+#define INIMIGO_MELEE 0
+#define INIMIGO_RANGED 1
 
 typedef struct Inimigo {
     Vector2 pos;
@@ -28,6 +31,6 @@ void moverInimigos(Inimigo *lista, Vector2 playerPos, float delta);
 void inimigosAtacam(Inimigo **lista, Player *player, float delta);
 void aplicarKnockbackInimigo(Inimigo *inimigo, Vector2 direcao, float intensidade, float duracao);
 void removerInimigosMortos(Inimigo **lista);
-void desenharInimigos(Inimigo *lista, Texture2D spriteInimigoMelee, Texture2D spriteInimigoRanged);
+void desenharInimigos(Inimigo *lista, Texture2D spriteInimigoMelee, Texture2D spriteInimigoRanged, Inimigo *inimigoFocado);
 
 #endif

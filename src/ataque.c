@@ -123,3 +123,45 @@ void projeteisDoPlayerAtacamInimigos(Projetil **listaProjetilPlayer, Inimigo **l
         }
     }
 }
+
+void limparProjetil(Projetil **listaProjetil) {
+    Projetil *temp;
+    while (*listaProjetil != NULL) {
+        temp = *listaProjetil;
+        *listaProjetil = (*listaProjetil)->prox;
+        free(temp);
+    }
+}
+
+Inimigo* inimigoMaisProximoNoAlcance(Inimigo *lista, Vector2 pos, float alcance) {
+    Inimigo *maisProximo = NULL;
+    float menorDist = alcance;
+
+    while (lista != NULL) {
+        float dx = lista->pos.x - pos.x;
+        float dy = lista->pos.y - pos.y;
+        float dist = sqrtf(dx * dx + dy * dy);
+
+        if (dist <= menorDist && lista->vida > 0) {
+            menorDist = dist;
+            maisProximo = lista;
+        }
+
+        lista = lista->prox;
+    }
+    return maisProximo;
+}
+
+void atualizarInimigoFocado(Inimigo *listaInimigos, Player *player) {
+    if (player->inimigoFocado == NULL || player->inimigoFocado->vida <= 0) {
+        player->inimigoFocado = inimigoMaisProximoNoAlcance(listaInimigos, player->pos, 200.0f); 
+    } else {
+        float dx = player->inimigoFocado->pos.x - player->pos.x;
+        float dy = player->inimigoFocado->pos.y - player->pos.y;
+        float dist = sqrtf(dx * dx + dy * dy);
+
+        if (dist > 200.0f || player->inimigoFocado->vida <= 0) {
+            player->inimigoFocado = inimigoMaisProximoNoAlcance(listaInimigos, player->pos, 200.0f);
+        }
+    }
+}
