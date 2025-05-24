@@ -1,9 +1,14 @@
 CC = gcc
-CFLAGS = -Wall -Wextra -g `pkg-config --cflags raylib`
+CFLAGS = -Wall -Wextra -g `pkg-config --cflags raylib` -Iincludes
 LDFLAGS = `pkg-config --libs raylib` -lm
 
-SRC = main.c inimigo.c projetil.c ataque.c player.c round.c
-OBJ = $(SRC:.c=.o)
+SRC_DIR = src
+OBJ_DIR = build
+
+SRC = $(SRC_DIR)/main.c $(SRC_DIR)/inimigo.c $(SRC_DIR)/projetil.c $(SRC_DIR)/ataque.c $(SRC_DIR)/player.c $(SRC_DIR)/round.c
+
+OBJ = $(patsubst $(SRC_DIR)/%.c,$(OBJ_DIR)/%.o,$(SRC))
+
 TARGET = cowboy_game
 
 .PHONY: all clean
@@ -13,15 +18,18 @@ all: $(TARGET)
 $(TARGET): $(OBJ)
 	$(CC) $(OBJ) -o $@ $(LDFLAGS)
 
-main.o: main.c player.h inimigo.h projetil.h ataque.h round.h
-inimigo.o: inimigo.c inimigo.h player.h
-projetil.o: projetil.c projetil.h player.h
-ataque.o: ataque.c ataque.h inimigo.h projetil.h player.h
-player.o: player.c player.h
-round.o: round.c round.h inimigo.h
+$(OBJ_DIR)/main.o: $(SRC_DIR)/main.c includes/player.h includes/inimigo.h includes/projetil.h includes/ataque.h includes/round.h
+$(OBJ_DIR)/inimigo.o: $(SRC_DIR)/inimigo.c includes/inimigo.h includes/player.h
+$(OBJ_DIR)/projetil.o: $(SRC_DIR)/projetil.c includes/projetil.h includes/player.h
+$(OBJ_DIR)/ataque.o: $(SRC_DIR)/ataque.c includes/ataque.h includes/inimigo.h includes/projetil.h includes/player.h
+$(OBJ_DIR)/player.o: $(SRC_DIR)/player.c includes/player.h
+$(OBJ_DIR)/round.o: $(SRC_DIR)/round.c includes/round.h includes/inimigo.h
 
-%.o: %.c
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
 	$(CC) $(CFLAGS) -c $< -o $@
 
+$(OBJ_DIR):
+	mkdir -p $(OBJ_DIR)
+
 clean:
-	rm -f $(OBJ) $(TARGET)
+	rm -rf $(OBJ_DIR) $(TARGET)
