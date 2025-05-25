@@ -23,6 +23,7 @@ int main(void) {
 
     Texture2D spritePlayer = LoadTexture("sprites/player.png");
     Texture2D spritePlayerShot = LoadTexture("sprites/playerShot.png");
+    Texture2D spritePlayerCorre = LoadTexture("sprites/personagemcorre.png"); 
     Texture2D spriteMelee = LoadTexture("sprites/InimigoFaca.png");
     Texture2D spriteRanged = LoadTexture("sprites/InimigoRanged.png");
     Texture2D spriteProjetil = LoadTexture("sprites/projetil.png");
@@ -41,8 +42,24 @@ int main(void) {
 
     float deltaTime;
 
+    Vector2 posAnterior = player.pos;
+
     while (!WindowShouldClose() && player.vida > 0) {
         deltaTime = GetFrameTime();
+
+        posAnterior = player.pos;
+
+        atualizarPlayer(&player, deltaTime);
+
+        bool estaAndando = (player.pos.x != posAnterior.x) || (player.pos.y != posAnterior.y);
+
+        if (player.invencivelTempo > 0) {
+            player.invencivelTempo -= deltaTime;
+            if (player.invencivelTempo < 0) player.invencivelTempo = 0;
+        }
+
+        atualizarRound(&round, &listaInimigos, deltaTime);
+        atualizarInimigoFocado(listaInimigos, &player);
 
         if (round.finalizado && IsKeyPressed(KEY_ENTER)) {
             if (round.numeroRound < MAX_ROUNDS) {
@@ -55,13 +72,10 @@ int main(void) {
             }
         }
 
-        atualizarRound(&round, &listaInimigos, deltaTime);
-        atualizarPlayer(&player, deltaTime);
-        atualizarInimigoFocado(listaInimigos, &player);
-
         if (round.emAndamento && round.tempoParaComecar <= 0) {
             projeteisDoPlayerAtacamInimigos(&listaProjetil, &listaInimigos);
             removerInimigosMortos(&listaInimigos);
+            projeteisAtacamPlayer(&listaProjetil, &player);
 
             if (listaInimigos == NULL) {
                 liberarListaProjetis(&listaProjetil);
@@ -75,20 +89,6 @@ int main(void) {
                 moverInimigos(listaInimigos, player.pos, deltaTime);
                 inimigosAtacam(&listaInimigos, &player, deltaTime);
                 atualizarProjetis(&listaProjetil, &player, deltaTime);
-
-                for (Projetil *p = listaProjetil; p != NULL; p = p->prox) {
-                    if (p->tipo == PROJETIL_INIMIGO && p->ativo) {
-                        float dx = p->pos.x - player.pos.x;
-                        float dy = p->pos.y - player.pos.y;
-                        float dist = sqrtf(dx * dx + dy * dy);
-                        float colisaoRaio = 15.0f;
-
-                        if (dist < colisaoRaio) {
-                            player.vida -= p->dano;
-                            p->ativo = 0; 
-                        }
-                    }
-                }
 
                 if (player.tempoDesdeUltAtq >= player.cooldownAtq && player.inimigoFocado != NULL) {
                     Vector2 dir = {
@@ -116,9 +116,11 @@ int main(void) {
         DrawTexture(spriteCenario, 0, 0, WHITE);
 
         if (player.tempoDesdeUltAtq < player.cooldownAtq) {
-            desenharPlayer(&player, spritePlayerShot);
+            DrawTexture(spritePlayerShot, player.pos.x - spritePlayerShot.width/2, player.pos.y - spritePlayerShot.height/2, WHITE);
+        } else if (estaAndando) {
+            DrawTexture(spritePlayerCorre, player.pos.x - spritePlayerCorre.width/2, player.pos.y - spritePlayerCorre.height/2, WHITE);
         } else {
-            desenharPlayer(&player, spritePlayer);
+            DrawTexture(spritePlayer, player.pos.x - spritePlayer.width/2, player.pos.y - spritePlayer.height/2, WHITE);
         }
 
         if (round.emAndamento) {
@@ -162,6 +164,7 @@ int main(void) {
 
     UnloadTexture(spritePlayer);
     UnloadTexture(spritePlayerShot);
+    UnloadTexture(spritePlayerCorre); 
     UnloadTexture(spriteMelee);
     UnloadTexture(spriteRanged);
     UnloadTexture(spriteProjetil);

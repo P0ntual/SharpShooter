@@ -235,10 +235,13 @@ void desenharInimigos(Inimigo *lista, Texture2D spriteInimigoMelee, Texture2D sp
                 desenharInimigoComBorda(lista->pos, spriteInimigoRanged);
             }
         } else {
+            Vector2 posCentralizada = { lista->pos.x - (lista->tipo == 0 ? spriteInimigoMelee.width / 2 : spriteInimigoRanged.width / 2),
+                                       lista->pos.y - (lista->tipo == 0 ? spriteInimigoMelee.height / 2 : spriteInimigoRanged.height / 2) };
+
             if (lista->tipo == 0) {
-                DrawTextureV(spriteInimigoMelee, lista->pos, WHITE);
+                DrawTexture(spriteInimigoMelee, posCentralizada.x, posCentralizada.y, WHITE);
             } else {
-                DrawTextureV(spriteInimigoRanged, lista->pos, WHITE);
+                DrawTexture(spriteInimigoRanged, posCentralizada.x, posCentralizada.y, WHITE);
             }
         }
         lista = lista->prox;

@@ -52,8 +52,7 @@ void projeteisAtacamPlayer(Projetil **listaProjetil, Player *player) {
         float dist = sqrtf(dx * dx + dy * dy);
 
         if (dist < RAIO_COLISAO_PROJ && player->invencivelTempo <= 0.0f) {
-            player->vida -= temp->dano;
-            player->invencivelTempo = TEMPO_INVENCIVEL;
+            aplicarDano(player, temp->dano);
             aplicarKnockback(&player->pos, dx, dy, KNOCKBACK_FORCE);
 
             Projetil *remover = temp;
