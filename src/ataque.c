@@ -3,40 +3,36 @@
 #include "raylib.h"
 #include "ataque.h"
 #include "inimigo.h"
-#include "projetil.h" 
+#include "projetil.h"
 
 #define KNOCKBACK_FORCE     50.0f
 #define RAIO_ATAQUE_CORPO   30.0f
 #define RAIO_COLISAO_PROJ   15.0f
+#define TEMPO_INVENCIVEL    1.0f
+#define ALCANCE_FOCO        200.0f
 
-static void aplicarKnockback(Vector2 *pos, float dx, float dy, float força) {
+static void aplicarKnockback(Vector2 *pos, float dx, float dy, float forca) {
     float length = sqrtf(dx * dx + dy * dy);
     if (length == 0) return;
-    float nx = dx / length;
-    float ny = dy / length;
-    pos->x -= nx * força;
-    pos->y -= ny * força;
+    pos->x -= (dx / length) * forca;
+    pos->y -= (dy / length) * forca;
 }
 
 void playerAtaca(Inimigo **listaInimigos, Player *player) {
-    Inimigo *temp = *listaInimigos;
-    while (temp != NULL) {
+    for (Inimigo *temp = *listaInimigos; temp != NULL; temp = temp->prox) {
         float dx = temp->pos.x - player->pos.x;
         float dy = temp->pos.y - player->pos.y;
         float dist = sqrtf(dx * dx + dy * dy);
 
         if (dist < RAIO_ATAQUE_CORPO) {
             temp->vida -= player->dano;
-            
-            float magnitude = KNOCKBACK_FORCE * 0.5f;
             if (dist != 0) {
                 float nx = dx / dist;
                 float ny = dy / dist;
-                temp->pos.x += nx * magnitude;
-                temp->pos.y += ny * magnitude;
+                temp->pos.x += nx * (KNOCKBACK_FORCE * 0.5f);
+                temp->pos.y += ny * (KNOCKBACK_FORCE * 0.5f);
             }
         }
-        temp = temp->prox;
     }
 }
 
@@ -45,16 +41,22 @@ void projeteisAtacamPlayer(Projetil **listaProjetil, Player *player) {
     Projetil *anterior = NULL;
 
     while (temp != NULL) {
-        float dx = temp->pos.x - player->pos.x;
-        float dy = temp->pos.y - player->pos.y;
+        if (temp->tipo != PROJETIL_INIMIGO) {
+            anterior = temp;
+            temp = temp->prox;
+            continue;
+        }
+
+        float dx = player->pos.x - temp->pos.x;
+        float dy = player->pos.y - temp->pos.y;
         float dist = sqrtf(dx * dx + dy * dy);
 
         if (dist < RAIO_COLISAO_PROJ && player->invencivelTempo <= 0.0f) {
             player->vida -= temp->dano;
-            player->invencivelTempo = 1.0f;
+            player->invencivelTempo = TEMPO_INVENCIVEL;
             aplicarKnockback(&player->pos, dx, dy, KNOCKBACK_FORCE);
 
-            Projetil *rem = temp;
+            Projetil *remover = temp;
             if (anterior == NULL) {
                 *listaProjetil = temp->prox;
                 temp = *listaProjetil;
@@ -62,12 +64,11 @@ void projeteisAtacamPlayer(Projetil **listaProjetil, Player *player) {
                 anterior->prox = temp->prox;
                 temp = anterior->prox;
             }
-            free(rem);
-            continue;
+            free(remover);
+        } else {
+            anterior = temp;
+            temp = temp->prox;
         }
-
-        anterior = temp;
-        temp = temp->prox;
     }
 }
 
@@ -108,7 +109,7 @@ void projeteisDoPlayerAtacamInimigos(Projetil **listaProjetilPlayer, Inimigo **l
         }
 
         if (atingiu) {
-            Projetil *rem = proj;
+            Projetil *remover = proj;
             if (anteriorProj == NULL) {
                 *listaProjetilPlayer = proj->prox;
                 proj = *listaProjetilPlayer;
@@ -116,7 +117,7 @@ void projeteisDoPlayerAtacamInimigos(Projetil **listaProjetilPlayer, Inimigo **l
                 anteriorProj->prox = proj->prox;
                 proj = anteriorProj->prox;
             }
-            free(rem);
+            free(remover);
         } else {
             anteriorProj = proj;
             proj = proj->prox;
@@ -125,10 +126,9 @@ void projeteisDoPlayerAtacamInimigos(Projetil **listaProjetilPlayer, Inimigo **l
 }
 
 void limparProjetil(Projetil **listaProjetil) {
-    Projetil *temp;
     while (*listaProjetil != NULL) {
-        temp = *listaProjetil;
-        *listaProjetil = (*listaProjetil)->prox;
+        Projetil *temp = *listaProjetil;
+        *listaProjetil = temp->prox;
         free(temp);
     }
 }
@@ -149,19 +149,21 @@ Inimigo* inimigoMaisProximoNoAlcance(Inimigo *lista, Vector2 pos, float alcance)
 
         lista = lista->prox;
     }
+
     return maisProximo;
 }
 
 void atualizarInimigoFocado(Inimigo *listaInimigos, Player *player) {
     if (player->inimigoFocado == NULL || player->inimigoFocado->vida <= 0) {
-        player->inimigoFocado = inimigoMaisProximoNoAlcance(listaInimigos, player->pos, 200.0f); 
-    } else {
-        float dx = player->inimigoFocado->pos.x - player->pos.x;
-        float dy = player->inimigoFocado->pos.y - player->pos.y;
-        float dist = sqrtf(dx * dx + dy * dy);
+        player->inimigoFocado = inimigoMaisProximoNoAlcance(listaInimigos, player->pos, ALCANCE_FOCO);
+        return;
+    }
 
-        if (dist > 200.0f || player->inimigoFocado->vida <= 0) {
-            player->inimigoFocado = inimigoMaisProximoNoAlcance(listaInimigos, player->pos, 200.0f);
-        }
+    float dx = player->inimigoFocado->pos.x - player->pos.x;
+    float dy = player->inimigoFocado->pos.y - player->pos.y;
+    float dist = sqrtf(dx * dx + dy * dy);
+
+    if (dist > ALCANCE_FOCO || player->inimigoFocado->vida <= 0) {
+        player->inimigoFocado = inimigoMaisProximoNoAlcance(listaInimigos, player->pos, ALCANCE_FOCO);
     }
 }
